@@ -1,0 +1,442 @@
+[
+  {
+    "name": "Microsoft Visual C++ Runtime (x64)",
+    "category": "ยูทิลิตี้",
+    "type": "url",
+    "sets": [
+      "work",
+      "game"
+    ],
+    "url": "https://aka.ms/vs/17/release/vc_redist.x64.exe",
+    "fileName": "vc_redist.x64.exe",
+    "args": "/install /quiet /norestart",
+    "wingetId": "Microsoft.VCRedist.2015+.x64",
+    "signer": "Microsoft",
+    "okCodes": [
+      1638
+    ],
+    "detect": "re:Microsoft Visual C\\+\\+ 20(15|17|19|22).*Redistributable \\(x64\\)"
+  },
+  {
+    "name": "Microsoft Visual C++ Runtime (x86)",
+    "category": "ยูทิลิตี้",
+    "type": "url",
+    "sets": [
+      "work",
+      "game"
+    ],
+    "url": "https://aka.ms/vs/17/release/vc_redist.x86.exe",
+    "fileName": "vc_redist.x86.exe",
+    "args": "/install /quiet /norestart",
+    "wingetId": "Microsoft.VCRedist.2015+.x86",
+    "signer": "Microsoft",
+    "okCodes": [
+      1638
+    ],
+    "detect": "re:Microsoft Visual C\\+\\+ 20(15|17|19|22).*Redistributable \\(x86\\)"
+  },
+  {
+    "name": "LINE",
+    "category": "สื่อสาร",
+    "type": "file",
+    "shortcut": [
+      "LINE"
+    ],
+    "file": "Installers\\LINE\\*.exe",
+    "args": "/S",
+    "pageUrl": "https://line.me/th/download",
+    "url": "https://desktop.line-scdn.net/win/new/LineInst.exe",
+    "fileName": "LineInst.exe",
+    "signer": "LY Corp|LINE Corp|LINE Yahoo",
+    "wingetId": "LINE.LINE",
+    "timeout": 420,
+    "check": "%LOCALAPPDATA%\\LINE\\bin\\current|%LOCALAPPDATA%\\LINE\\bin\\LineLauncher.exe",
+    "ui": "line",
+    "sets": [
+      "work",
+      "game"
+    ],
+    "detect": "re:^LINE$"
+  },
+  {
+    "name": "Discord",
+    "category": "สื่อสาร",
+    "type": "url",
+    "shortcut": [
+      "Discord"
+    ],
+    "sets": [
+      "game"
+    ],
+    "url": "https://discord.com/api/downloads/distributions/app/installers/latest?channel=stable&platform=win&arch=x64",
+    "fileName": "DiscordSetup.exe",
+    "args": " ",
+    "wingetId": "Discord.Discord",
+    "signer": "Discord",
+    "timeout": 600,
+    "detect": "%LOCALAPPDATA%\\Discord\\Update.exe##re:^Discord$"
+  },
+  {
+    "name": "Steam",
+    "category": "เกม",
+    "type": "url",
+    "shortcut": [
+      "Steam"
+    ],
+    "sets": [
+      "game"
+    ],
+    "checked": false,
+    "url": "https://cdn.akamai.steamstatic.com/client/installer/SteamSetup.exe",
+    "fileName": "SteamSetup.exe",
+    "args": "/S",
+    "wingetId": "Valve.Steam",
+    "signer": "Valve",
+    "detect": "re:^Steam$##%ProgramFiles(x86)%\\Steam\\steam.exe"
+  },
+  {
+    "name": "Epic Games Launcher",
+    "category": "เกม",
+    "type": "url",
+    "shortcut": [
+      "Epic Games Launcher"
+    ],
+    "sets": [
+      "game"
+    ],
+    "checked": false,
+    "url": "https://launcher-public-service-prod06.ol.epicgames.com/launcher/api/installer/download/EpicGamesLauncherInstaller.msi",
+    "fileName": "EpicGamesLauncherInstaller.msi",
+    "args": "/qn /norestart",
+    "wingetId": "EpicGames.EpicGamesLauncher",
+    "signer": "Epic Games",
+    "detect": "re:^Epic Games Launcher$"
+  },
+  {
+    "name": "Zoom",
+    "category": "สื่อสาร",
+    "type": "url",
+    "shortcut": [
+      "Zoom Workplace",
+      "Zoom"
+    ],
+    "sets": [
+      "work"
+    ],
+    "url": "https://zoom.us/client/latest/ZoomInstallerFull.msi?archType=x64",
+    "fileName": "ZoomInstallerFull.msi",
+    "args": "/qn /norestart",
+    "wingetId": "Zoom.Zoom",
+    "signer": "Zoom",
+    "url32": "https://zoom.us/client/latest/ZoomInstallerFull.msi",
+    "detect": "re:^Zoom( Workplace| Meetings| Client)?( \\(64-bit\\))?$##%ProgramFiles%\\Zoom\\bin\\Zoom.exe"
+  },
+  {
+    "name": "Google Chrome",
+    "category": "เบราว์เซอร์",
+    "type": "url",
+    "shortcut": [
+      "Google Chrome"
+    ],
+    "sets": [
+      "work",
+      "game"
+    ],
+    "url": "https://dl.google.com/dl/chrome/install/googlechromestandaloneenterprise64.msi",
+    "fileName": "googlechromestandaloneenterprise64.msi",
+    "args": "/qn /norestart",
+    "wingetId": "Google.Chrome",
+    "signer": "Google",
+    "url32": "https://dl.google.com/dl/chrome/install/googlechromestandaloneenterprise.msi",
+    "detect": "re:^Google Chrome$##%ProgramFiles%\\Google\\Chrome\\Application\\chrome.exe##%ProgramFiles(x86)%\\Google\\Chrome\\Application\\chrome.exe"
+  },
+  {
+    "name": "WinRAR",
+    "category": "ยูทิลิตี้",
+    "type": "url",
+    "shortcut": [
+      "WinRAR"
+    ],
+    "sets": [
+      "work",
+      "game"
+    ],
+    "url": "",
+    "fileName": "WinRARSetup.exe",
+    "args": "/S",
+    "wingetId": "RARLab.WinRAR",
+    "signer": "win.rar",
+    "resolve": "winrar",
+    "detect": "re:^WinRAR##%ProgramFiles%\\WinRAR\\WinRAR.exe"
+  },
+  {
+    "name": "AnyDesk",
+    "category": "ยูทิลิตี้",
+    "type": "url",
+    "shortcut": [
+      "AnyDesk"
+    ],
+    "url": "https://download.anydesk.com/AnyDesk.exe",
+    "fileName": "AnyDesk.exe",
+    "args": "--install \"C:\\Program Files (x86)\\AnyDesk\" --start-with-win --silent --create-shortcuts --create-desktop-icon",
+    "signer": "AnyDesk|philandro",
+    "wingetId": "AnyDesk.AnyDesk",
+    "sets": [
+      "work"
+    ],
+    "detect": "re:^AnyDesk##%ProgramFiles(x86)%\\AnyDesk\\AnyDesk.exe##%ProgramFiles%\\AnyDesk\\AnyDesk.exe"
+  },
+  {
+    "name": "Foxit PDF Reader",
+    "category": "ยูทิลิตี้",
+    "type": "url",
+    "shortcut": [
+      "Foxit PDF Reader",
+      "Foxit Reader"
+    ],
+    "sets": [
+      "work"
+    ],
+    "url": "https://www.foxit.com/downloads/latest.html?product=Foxit-Reader&platform=Windows&version=&package_type=&language=English&distID=",
+    "fileName": "FoxitPDFReader_Setup.msi",
+    "args": "/qn /norestart",
+    "wingetId": "Foxit.FoxitReader",
+    "signer": "Foxit",
+    "detect": "re:^Foxit (PDF )?Reader",
+    "resolve": "foxit"
+  },
+  {
+    "name": "VLC media player",
+    "category": "มัลติมีเดีย",
+    "type": "url",
+    "shortcut": [
+      "VLC media player"
+    ],
+    "sets": [
+      "work",
+      "game"
+    ],
+    "url": "",
+    "fileName": "VlcSetup.exe",
+    "args": "/S",
+    "wingetId": "VideoLAN.VLC",
+    "signer": "VideoLAN",
+    "resolve": "vlc",
+    "detect": "re:^VLC media player##%ProgramFiles%\\VideoLAN\\VLC\\vlc.exe"
+  },
+  {
+    "name": "AIMP",
+    "category": "มัลติมีเดีย",
+    "type": "url",
+    "shortcut": [
+      "AIMP"
+    ],
+    "url": "https://aimp.ru/?do=download.file&id=3",
+    "fileName": "AIMP-setup.exe",
+    "args": "/AUTO /SILENT",
+    "wingetId": "AIMP.AIMP",
+    "signer": "Izmaylov",
+    "sets": [
+      "game"
+    ],
+    "detect": "re:^AIMP"
+  },
+  {
+    "name": "Microsoft Office 2024 (จากไฟล์ OfficeSetup2024)",
+    "category": "ออฟฟิศ",
+    "type": "file",
+    "shortcut": [
+      "Word",
+      "Excel",
+      "PowerPoint"
+    ],
+    "file": "Installers\\Office\\OfficeSetup2024.exe",
+    "alt": "OfficeSetup2024*.exe",
+    "args": " ",
+    "timeout": 3600,
+    "sets": [
+      "work"
+    ],
+    "detect": "%ProgramFiles%\\Microsoft Office\\root\\Office16\\WINWORD.EXE##%ProgramFiles(x86)%\\Microsoft Office\\root\\Office16\\WINWORD.EXE"
+  },
+  {
+    "name": "Microsoft Project 2024 (จากไฟล์ Project.exe)",
+    "category": "ออฟฟิศ",
+    "type": "file",
+    "shortcut": [
+      "Project"
+    ],
+    "file": "Installers\\Office\\Project.exe",
+    "alt": "Project*.exe",
+    "args": " ",
+    "timeout": 3600,
+    "sets": [
+      "work"
+    ],
+    "checked": false,
+    "detect": "%ProgramFiles%\\Microsoft Office\\root\\Office16\\WINPROJ.EXE##%ProgramFiles(x86)%\\Microsoft Office\\root\\Office16\\WINPROJ.EXE"
+  },
+  {
+    "name": "Microsoft Visio 2024 (จากไฟล์ Visio.exe)",
+    "category": "ออฟฟิศ",
+    "type": "file",
+    "shortcut": [
+      "Visio"
+    ],
+    "file": "Installers\\Office\\Visio.exe",
+    "alt": "Visio*.exe",
+    "args": " ",
+    "timeout": 3600,
+    "sets": [
+      "work"
+    ],
+    "checked": false,
+    "detect": "%ProgramFiles%\\Microsoft Office\\root\\Office16\\VISIO.EXE##%ProgramFiles(x86)%\\Microsoft Office\\root\\Office16\\VISIO.EXE"
+  },
+  {
+    "name": "ฟอนต์ของฉัน (จากโฟลเดอร์ Fonts ข้างโปรแกรม)",
+    "category": "ฟอนต์",
+    "type": "fonts",
+    "folder": "Fonts",
+    "sets": [
+      "work"
+    ]
+  },
+  {
+    "name": "ตั้งโซนเวลาเป็นกรุงเทพ (UTC+7) และซิงค์เวลา",
+    "category": "ตั้งค่าเครื่อง",
+    "type": "task",
+    "task": "timezone",
+    "sets": [
+      "work",
+      "game"
+    ]
+  },
+  {
+    "name": "เพิ่มภาษาไทยและคีย์บอร์ดไทย (ยังมีอังกฤษอยู่)",
+    "category": "ตั้งค่าเครื่อง",
+    "type": "task",
+    "task": "thai-input",
+    "sets": [
+      "work",
+      "game"
+    ]
+  },
+  {
+    "name": "ตั้งภูมิภาคและรูปแบบวันที่/เวลาเป็นแบบไทย",
+    "category": "ตั้งค่าเครื่อง",
+    "type": "task",
+    "task": "thai-region",
+    "sets": [
+      "work",
+      "game"
+    ]
+  },
+  {
+    "name": "ตั้งภาษาสำหรับโปรแกรม non-Unicode เป็นภาษาไทย",
+    "category": "ตั้งค่าเครื่อง",
+    "type": "task",
+    "task": "thai-locale",
+    "sets": [
+      "work",
+      "game"
+    ]
+  },
+  {
+    "name": "ตั้งปุ่มสลับภาษาเป็น ` (Grave Accent) และ Ctrl+Shift",
+    "category": "ตั้งค่าเครื่อง",
+    "type": "task",
+    "task": "lang-hotkey",
+    "sets": [
+      "work",
+      "game"
+    ]
+  },
+  {
+    "name": "แสดงไอคอน This PC / ถังขยะ / ไฟล์ผู้ใช้ / Control Panel บนเดสก์ท็อป",
+    "category": "ตั้งค่าเครื่อง",
+    "type": "task",
+    "task": "desktop-icons",
+    "sets": [
+      "work",
+      "game"
+    ]
+  },
+  {
+    "name": "NVIDIA app (ไดรเวอร์การ์ดจอ)",
+    "category": "ไดรเวอร์การ์ดจอ",
+    "type": "file",
+    "gpu": "nvidia",
+    "file": "Installers\\NVIDIA\\*.exe",
+    "args": "-s",
+    "pageUrl": "https://www.nvidia.com/en-us/drivers/",
+    "alt": "NVIDIA_app*.exe",
+    "sets": [
+      "work",
+      "game"
+    ],
+    "detect": "re:^NVIDIA app"
+  },
+  {
+    "name": "NVIDIA Graphics Driver (ไฟล์ไดรเวอร์ที่โหลดไว้ - ติดตั้งอัตโนมัติ)",
+    "category": "ไดรเวอร์การ์ดจอ",
+    "type": "file",
+    "gpu": "nvidia",
+    "file": "Installers\\NVIDIA-Driver\\*.exe",
+    "alt": "*-win10-win11-64bit*.exe",
+    "args": "-s -noreboot -noeula",
+    "optional": true,
+    "timeout": 1800,
+    "sets": [
+      "work",
+      "game"
+    ],
+    "detect": "re:^NVIDIA (Graphics Driver|กราฟิก)",
+    "chassis": true
+  },
+  {
+    "name": "AMD Software (Adrenalin)",
+    "category": "ไดรเวอร์การ์ดจอ",
+    "type": "file",
+    "gpu": "amd",
+    "file": "Installers\\AMD\\*.exe",
+    "args": "-INSTALL",
+    "pageUrl": "https://www.amd.com/en/support/download/drivers.html",
+    "alt": "amd-software*.exe",
+    "sets": [
+      "work",
+      "game"
+    ],
+    "detect": "re:^AMD Software"
+  },
+  {
+    "name": "ตั้ง Google Chrome เป็นภาษาไทย",
+    "category": "ตั้งค่าเครื่อง",
+    "type": "task",
+    "task": "chrome-thai",
+    "sets": [
+      "work",
+      "game"
+    ]
+  },
+  {
+    "name": "สร้างช็อตคัต Facebook, YouTube และ Messenger บนเดสก์ท็อป",
+    "category": "ตั้งค่าเครื่อง",
+    "type": "task",
+    "task": "web-shortcuts",
+    "sets": [
+      "work",
+      "game"
+    ]
+  },
+  {
+    "name": "สร้างช็อตคัตของทุกโปรแกรมที่ติดตั้งไว้บนเดสก์ท็อป",
+    "category": "ตั้งค่าเครื่อง",
+    "type": "task",
+    "task": "desktop-shortcuts",
+    "sets": [
+      "work",
+      "game"
+    ]
+  }
+]
