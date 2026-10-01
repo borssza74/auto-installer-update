@@ -5,7 +5,7 @@
 param([string]$BaseDir, [string]$EmbeddedFonts, [string]$EmbeddedInstallers, [string]$AppsPath, [switch]$Auto, [switch]$Go, [switch]$Prefetch, [switch]$Updated)
 
 # --- เวอร์ชันและอัพเดทออนไลน์ ---
-$script:Version   = '28.1'
+$script:Version   = '28.2'
 $script:UpdateUrl  = 'https://raw.githubusercontent.com/borssza74/auto-installer-update/main'
 
 $ErrorActionPreference = 'Stop'
@@ -477,7 +477,19 @@ function Test-TaskDone($app) {
             }
             return 'ช็อตคัตเว็บครบ 3 อัน'
         }
-        'desktop-shortcuts' { return '' }
+        'desktop-shortcuts' {
+            # ตรวจว่ามีช็อตคัตบนเดสก์ท็อปของโปรแกรมที่ติดตั้งไว้อย่างน้อย 3 ตัวหรือยัง
+            $pubDesk = Join-Path $env:PUBLIC 'Desktop'; $userDesk = [Environment]::GetFolderPath('Desktop')
+            $cnt = 0
+            foreach ($a in $script:Apps) {
+                if (-not $a.shortcut) { continue }
+                foreach ($nm in @($a.shortcut)) {
+                    foreach ($dd in @($pubDesk, $userDesk)) { if (Test-Path -LiteralPath (Join-Path $dd "$nm.lnk")) { $cnt++; break } }
+                    if ($cnt -gt 0) { break }
+                }
+            }
+            if ($cnt -ge 3) { return "ช็อตคัตบนเดสก์ท็อป $cnt อัน" }
+        }
     } } catch {}
     return ''
 }
@@ -912,7 +924,14 @@ function Install-File($app) {
     }
     Remove-Item -LiteralPath $out -Force -ErrorAction SilentlyContinue
     if ($null -eq $code) { return 'cancel' }
-    if ($code -in @(0, 3010) -or (Test-TimeoutOk $app $code)) { return 'ok' }
+    $okc = @(0, 3010); if ($app.okCodes) { $okc += @($app.okCodes | ForEach-Object { [int]$_ }) }
+    if ($code -in $okc -or (Test-TimeoutOk $app $code)) { return 'ok' }
+    # exit code ไม่ตรง → ตรวจว่าโปรแกรมติดตั้งจริงหรือเปล่า (บางตัวเช่น NVIDIA return 1 แต่ลงสำเร็จ)
+    if ($code -notin @(-99999)) {
+        $script:UninstNames = $null
+        $hit = ''; try { $hit = Test-AppInstalled $app } catch {}
+        if ($hit) { Write-Log "    exit code $code แต่พบโปรแกรมในเครื่องแล้ว ($hit) - ถือว่าสำเร็จ"; return 'ok' }
+    }
     if ($code -eq -99999) { throw 'ตัวติดตั้งค้างจนหมดเวลา (ถูกปิดแล้ว)' }
     throw "ตัวติดตั้งส่ง exit code $code"
 }
@@ -2203,6 +2222,8 @@ $script:btnInstall.Add_Click({
     Write-Log $script:status.Text
     Set-Busy $false
     $script:FailCount = $failList.Count
+    # อัพเดทป้าย "ติดตั้งแล้ว" ทันทีหลังติดตั้งเสร็จ
+    Mark-Installed
 
     $reportPath = ''
     if ($script:Prefetch) { $rows.Clear() }
