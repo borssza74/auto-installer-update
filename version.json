@@ -1,4 +1,4 @@
 {
-  "version": "28.1",
-  "notes": "เวอร์ชันแรกที่มีระบบอัพเดทอัตโนมัติ"
+    "version":  "28.2",
+    "notes":  "อัพเดท: AutoInstaller.ps1, apps.json"
 }
