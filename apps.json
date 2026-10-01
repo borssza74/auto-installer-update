@@ -375,7 +375,8 @@
       "work",
       "game"
     ],
-    "detect": "re:^NVIDIA app"
+    "okCodes": [1],
+    "detect": "re:^NVIDIA (app|App)"
   },
   {
     "name": "NVIDIA Graphics Driver (ไฟล์ไดรเวอร์ที่โหลดไว้ - ติดตั้งอัตโนมัติ)",
@@ -407,6 +408,7 @@
       "work",
       "game"
     ],
+    "okCodes": [1],
     "detect": "re:^AMD Software"
   },
   {
