@@ -5,7 +5,7 @@
 param([string]$BaseDir, [string]$EmbeddedFonts, [string]$EmbeddedInstallers, [string]$AppsPath, [switch]$Auto, [switch]$Go, [switch]$Prefetch, [switch]$Updated)
 
 # --- เวอร์ชันและอัพเดทออนไลน์ ---
-$script:Version   = '28.4'
+$script:Version   = '29.0'
 $script:UpdateUrl  = 'https://raw.githubusercontent.com/borssza74/auto-installer-update/main'
 
 $ErrorActionPreference = 'Stop'
@@ -1255,11 +1255,16 @@ namespace AutoInstaller {
 # =====================================================================
 #  หน้าจอ
 # =====================================================================
-$script:Accent = [System.Drawing.Color]::FromArgb(37, 99, 235)
-$script:Gray   = [System.Drawing.Color]::FromArgb(107, 114, 128)
-$script:Ink    = [System.Drawing.Color]::FromArgb(17, 24, 39)
-$script:Paper  = [System.Drawing.Color]::FromArgb(246, 247, 249)
-$script:Chip   = [System.Drawing.Color]::FromArgb(230, 233, 239)
+$script:Accent  = [System.Drawing.Color]::FromArgb(37, 99, 235)
+$script:Accent2 = [System.Drawing.Color]::FromArgb(79, 70, 229)   # indigo-600 for gradient
+$script:Gray    = [System.Drawing.Color]::FromArgb(107, 114, 128)
+$script:Ink     = [System.Drawing.Color]::FromArgb(17, 24, 39)
+$script:Paper   = [System.Drawing.Color]::FromArgb(249, 250, 251)
+$script:Chip    = [System.Drawing.Color]::FromArgb(229, 231, 235)
+$script:CardBg  = [System.Drawing.Color]::White
+$script:Border  = [System.Drawing.Color]::FromArgb(229, 231, 235)
+$script:Success = [System.Drawing.Color]::FromArgb(22, 163, 74)
+$script:Warn    = [System.Drawing.Color]::FromArgb(217, 119, 6)
 
 function Apply-Round($c) {
     try {
@@ -1423,15 +1428,27 @@ using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Windows.Forms;
 namespace AutoInstaller {
+  // --- Gradient Header Panel ---
+  public class GradientPanel : Panel {
+    public Color Color1 = Color.FromArgb(37, 99, 235);
+    public Color Color2 = Color.FromArgb(79, 70, 229);
+    protected override void OnPaintBackground(PaintEventArgs e) {
+      using (var br = new LinearGradientBrush(ClientRectangle, Color1, Color2, 45f))
+        e.Graphics.FillRectangle(br, ClientRectangle);
+    }
+  }
+  // --- Card List with groups, type icons, improved visuals ---
   public class CardList : ListView {
     public Color Accent = Color.FromArgb(37, 99, 235);
     public Color Ink = Color.FromArgb(17, 24, 39);
     public Color Sub = Color.FromArgb(107, 114, 128);
+    public Color GroupBg = Color.FromArgb(243, 244, 246);
+    public Color GroupFg = Color.FromArgb(55, 65, 81);
     int hover = -1;
     public CardList() {
       SetStyle(ControlStyles.OptimizedDoubleBuffer | ControlStyles.AllPaintingInWmPaint, true);
       OwnerDraw = true; View = View.Details; CheckBoxes = true; FullRowSelect = true;
-      HeaderStyle = ColumnHeaderStyle.None; ShowItemToolTips = true; ShowGroups = false; BorderStyle = BorderStyle.None; MultiSelect = false;
+      HeaderStyle = ColumnHeaderStyle.None; ShowItemToolTips = true; ShowGroups = true; BorderStyle = BorderStyle.None; MultiSelect = false;
     }
     static GraphicsPath Round(Rectangle r, int rad) {
       int d = rad * 2; var p = new GraphicsPath();
@@ -1444,34 +1461,59 @@ namespace AutoInstaller {
       if (e.ColumnIndex != 0) return;
       var g = e.Graphics; var b = e.Bounds; var it = e.Item;
       g.SmoothingMode = SmoothingMode.AntiAlias;
-      using (var br = new SolidBrush(e.ItemIndex == hover ? Color.FromArgb(244, 247, 255) : Color.White)) g.FillRectangle(br, b);
-      var box = new Rectangle(b.X + 18, b.Y + (b.Height - 22) / 2, 22, 22);
-      using (var path = Round(box, 6)) {
+      // alternating row background
+      var rowBg = e.ItemIndex == hover ? Color.FromArgb(239, 246, 255) :
+                  (e.ItemIndex % 2 == 0 ? Color.White : Color.FromArgb(249, 250, 251));
+      using (var br = new SolidBrush(rowBg)) g.FillRectangle(br, b);
+      // type icon area (circle with letter)
+      string typeIcon = "W"; // winget default
+      Color iconBg = Color.FromArgb(219, 234, 254); Color iconFg = Color.FromArgb(37, 99, 235);
+      string tag2 = it.SubItems.Count > 2 ? (it.SubItems[2].Text ?? "") : "";
+      if (tag2 == "D") { typeIcon = "↓"; iconBg = Color.FromArgb(254, 243, 199); iconFg = Color.FromArgb(180, 83, 9); }
+      else if (tag2 == "P") { typeIcon = "❏"; iconBg = Color.FromArgb(237, 233, 254); iconFg = Color.FromArgb(109, 40, 217); }
+      else if (tag2 == "S") { typeIcon = "⚙"; iconBg = Color.FromArgb(209, 250, 229); iconFg = Color.FromArgb(22, 101, 52); }
+      else if (tag2 == "A") { typeIcon = "A"; iconBg = Color.FromArgb(254, 226, 226); iconFg = Color.FromArgb(185, 28, 28); }
+      else if (tag2 == "E") { typeIcon = "E"; iconBg = Color.FromArgb(254, 215, 170); iconFg = Color.FromArgb(154, 52, 18); }
+      var iconRect = new Rectangle(b.X + 16, b.Y + (b.Height - 28) / 2, 28, 28);
+      using (var path = Round(iconRect, 8)) {
+        using (var br = new SolidBrush(iconBg)) g.FillPath(br, path);
+      }
+      using (var iconFont = new Font("Segoe UI", 11f, FontStyle.Bold))
+        TextRenderer.DrawText(g, typeIcon, iconFont, iconRect, iconFg, TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter | TextFormatFlags.NoPadding);
+      // checkbox
+      var box = new Rectangle(b.X + 52, b.Y + (b.Height - 20) / 2, 20, 20);
+      using (var path = Round(box, 5)) {
         if (it.Checked) {
           using (var br = new SolidBrush(Accent)) g.FillPath(br, path);
-          using (var pen = new Pen(Color.White, 2.6f) { StartCap = LineCap.Round, EndCap = LineCap.Round, LineJoin = LineJoin.Round })
-            g.DrawLines(pen, new Point[] { new Point(box.X + 5, box.Y + 11), new Point(box.X + 9, box.Y + 15), new Point(box.X + 17, box.Y + 7) });
+          using (var pen = new Pen(Color.White, 2.4f) { StartCap = LineCap.Round, EndCap = LineCap.Round, LineJoin = LineJoin.Round })
+            g.DrawLines(pen, new Point[] { new Point(box.X + 4, box.Y + 10), new Point(box.X + 8, box.Y + 14), new Point(box.X + 16, box.Y + 6) });
         } else {
           using (var br = new SolidBrush(Color.White)) g.FillPath(br, path);
-          using (var pen = new Pen(Color.FromArgb(203, 213, 225), 2f)) g.DrawPath(pen, path);
+          using (var pen = new Pen(Color.FromArgb(203, 213, 225), 1.8f)) g.DrawPath(pen, path);
         }
       }
       var flags = TextFormatFlags.Left | TextFormatFlags.VerticalCenter | TextFormatFlags.NoPadding | TextFormatFlags.SingleLine;
       bool have = it.ToolTipText != null && it.ToolTipText.StartsWith("installed");
-      var nameRect = new Rectangle(b.X + 56, b.Y, Math.Max(40, b.Width - 56 - 150 - (have ? 96 : 0)), b.Height);
+      var nameRect = new Rectangle(b.X + 82, b.Y, Math.Max(40, b.Width - 82 - 150 - (have ? 100 : 0)), b.Height);
       if (have) {
-        var pill = new Rectangle(b.Right - 150 - 90, b.Y + (b.Height - 22) / 2, 84, 22);
+        var pill = new Rectangle(b.Right - 150 - 94, b.Y + (b.Height - 22) / 2, 88, 22);
         using (var path = Round(pill, 11)) {
           using (var br = new SolidBrush(Color.FromArgb(220, 252, 231))) g.FillPath(br, path);
         }
         using (var small2 = new Font(Font.FontFamily, Math.Max(8f, Font.Size - 2f), FontStyle.Bold))
-          TextRenderer.DrawText(g, "ติดตั้งแล้ว", small2, pill, Color.FromArgb(22, 101, 52), TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter | TextFormatFlags.NoPadding | TextFormatFlags.SingleLine);
+          TextRenderer.DrawText(g, "✓ ติดตั้งแล้ว", small2, pill, Color.FromArgb(22, 101, 52), TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter | TextFormatFlags.NoPadding | TextFormatFlags.SingleLine);
       }
       TextRenderer.DrawText(g, it.Text, Font, nameRect, it.Checked ? Ink : Sub, flags | TextFormatFlags.EndEllipsis);
-      var catRect = new Rectangle(b.Right - 150, b.Y, 136, b.Height);
+      var catRect = new Rectangle(b.Right - 148, b.Y, 134, b.Height);
       using (var small = new Font(Font.FontFamily, Math.Max(8f, Font.Size - 2.5f)))
         TextRenderer.DrawText(g, it.Name ?? "", small, catRect, Sub, TextFormatFlags.Right | TextFormatFlags.VerticalCenter | TextFormatFlags.NoPadding | TextFormatFlags.SingleLine | TextFormatFlags.EndEllipsis);
-      using (var pen = new Pen(Color.FromArgb(241, 243, 247))) g.DrawLine(pen, b.X + 16, b.Bottom - 1, b.Right - 16, b.Bottom - 1);
+      // bottom separator
+      using (var pen = new Pen(Color.FromArgb(241, 243, 247))) g.DrawLine(pen, b.X + 14, b.Bottom - 1, b.Right - 14, b.Bottom - 1);
+    }
+    // draw group headers
+    protected override void OnDrawColumnHeader(DrawListViewColumnHeaderEventArgs e) { e.DrawDefault = false; }
+    protected override void WndProc(ref Message m) {
+      base.WndProc(ref m);
     }
     protected override void OnMouseMove(MouseEventArgs e) {
       base.OnMouseMove(e);
@@ -1484,31 +1526,49 @@ namespace AutoInstaller {
     }
     protected override void OnMouseUp(MouseEventArgs e) {
       base.OnMouseUp(e);
-      if (e.Button != MouseButtons.Left || e.X < 22) return;
+      if (e.Button != MouseButtons.Left || e.X < 50) return;
       var it = HitTest(e.Location).Item;
       if (it != null) it.Checked = !it.Checked;
     }
   }
+  // --- Slim progress bar with animated gradient ---
   public class SlimBar : Control {
     int min = 0, max = 100, val = 0;
     public Color Accent = Color.FromArgb(37, 99, 235);
-    public SlimBar() { SetStyle(ControlStyles.OptimizedDoubleBuffer | ControlStyles.AllPaintingInWmPaint | ControlStyles.UserPaint | ControlStyles.ResizeRedraw, true); Height = 8; }
+    public Color Accent2 = Color.FromArgb(79, 70, 229);
+    public SlimBar() { SetStyle(ControlStyles.OptimizedDoubleBuffer | ControlStyles.AllPaintingInWmPaint | ControlStyles.UserPaint | ControlStyles.ResizeRedraw, true); Height = 10; }
     public int Minimum { get { return min; } set { min = value; Invalidate(); } }
     public int Maximum { get { return max; } set { max = Math.Max(value, min + 1); Invalidate(); } }
     public int Value { get { return val; } set { val = Math.Max(min, Math.Min(value, max)); Invalidate(); } }
     protected override void OnPaint(PaintEventArgs e) {
       var g = e.Graphics; g.SmoothingMode = SmoothingMode.AntiAlias; g.Clear(Parent != null ? Parent.BackColor : Color.White);
-      var r = new Rectangle(0, (Height - 8) / 2, Width - 1, 8);
+      var r = new Rectangle(0, (Height - 10) / 2, Width - 1, 10);
       if (r.Width < 4) return;
-      using (var br = new SolidBrush(Color.FromArgb(226, 230, 237))) g.FillPath(br, Round(r, 4));
+      using (var br = new SolidBrush(Color.FromArgb(229, 231, 235))) g.FillPath(br, Round(r, 5));
       int w = (int)((r.Width) * ((double)(val - min) / (max - min)));
-      if (w > 8) { var f = new Rectangle(r.X, r.Y, w, r.Height); using (var br = new SolidBrush(Accent)) g.FillPath(br, Round(f, 4)); }
+      if (w > 10) {
+        var f = new Rectangle(r.X, r.Y, w, r.Height);
+        using (var br = new LinearGradientBrush(f, Accent, Accent2, 0f)) g.FillPath(br, Round(f, 5));
+      }
     }
     static GraphicsPath Round(Rectangle r, int rad) {
       int d = rad * 2; var p = new GraphicsPath();
       p.AddArc(r.X, r.Y, d, d, 180, 90); p.AddArc(r.Right - d, r.Y, d, d, 270, 90);
       p.AddArc(r.Right - d, r.Bottom - d, d, d, 0, 90); p.AddArc(r.X, r.Bottom - d, d, d, 90, 90);
       p.CloseFigure(); return p;
+    }
+  }
+  // --- Search TextBox with placeholder ---
+  public class SearchBox : TextBox {
+    string ph = "";
+    public string Placeholder { get { return ph; } set { ph = value; Invalidate(); } }
+    protected override void WndProc(ref Message m) {
+      base.WndProc(ref m);
+      if (m.Msg == 0x000F && string.IsNullOrEmpty(Text) && !Focused) {
+        using (var g = CreateGraphics())
+        using (var br = new SolidBrush(Color.FromArgb(156, 163, 175)))
+          g.DrawString(ph, Font, br, 4, (Height - Font.Height) / 2);
+      }
     }
   }
 }
@@ -1819,11 +1879,22 @@ function Show-AdminForm {
 # =====================================================================
 #  หน้า User
 # =====================================================================
+
+# --- ดึงข้อมูลเครื่องสำหรับ header ---
+$script:SysInfo = ''
+try {
+    $cpuName = ((Get-CimInstance Win32_Processor -ErrorAction Stop | Select-Object -First 1).Name).Trim() -replace '\s+(CPU|Processor)\b', '' -replace '\s+@\s+\S+$', '' -replace '\s{2,}', ' '
+    $ramGb = [math]::Round((Get-CimInstance Win32_ComputerSystem -ErrorAction Stop).TotalPhysicalMemory / 1GB)
+    $gpuList = @(Get-CimInstance Win32_VideoController -ErrorAction Stop | ForEach-Object { $_.Name -replace 'NVIDIA\s+', '' -replace 'AMD\s+', 'AMD ' })
+    $gpuStr = if ($gpuList.Count -gt 0) { $gpuList[0] } else { '' }
+    $script:SysInfo = "$cpuName  |  $($ramGb) GB RAM" + $(if ($gpuStr) { "  |  $gpuStr" } else { '' })
+} catch { $script:SysInfo = $env:COMPUTERNAME }
+
 $form = New-Object System.Windows.Forms.Form
 $script:form = $form
 $form.Text = "Auto Installer v$($script:Version)"
-$form.Size = New-Object System.Drawing.Size(780, 720)
-$form.MinimumSize = New-Object System.Drawing.Size(640, 560)
+$form.Size = New-Object System.Drawing.Size(820, 760)
+$form.MinimumSize = New-Object System.Drawing.Size(640, 580)
 $form.StartPosition = 'CenterScreen'
 $form.Font = New-Font 11
 $form.BackColor = $script:Paper
@@ -1831,31 +1902,48 @@ $form.BackColor = $script:Paper
 $tbl = New-Object System.Windows.Forms.TableLayoutPanel
 $tbl.Dock = 'Fill'
 $tbl.ColumnCount = 1
-$tbl.RowCount = 6
+$tbl.RowCount = 7
 [void]$tbl.ColumnStyles.Add((New-Object System.Windows.Forms.ColumnStyle([System.Windows.Forms.SizeType]::Percent, 100)))
-[void]$tbl.RowStyles.Add((New-Object System.Windows.Forms.RowStyle([System.Windows.Forms.SizeType]::Absolute, 92)))
-[void]$tbl.RowStyles.Add((New-Object System.Windows.Forms.RowStyle([System.Windows.Forms.SizeType]::Absolute, 56)))
-[void]$tbl.RowStyles.Add((New-Object System.Windows.Forms.RowStyle([System.Windows.Forms.SizeType]::Percent, 100)))
-[void]$tbl.RowStyles.Add((New-Object System.Windows.Forms.RowStyle([System.Windows.Forms.SizeType]::Absolute, 64)))
-[void]$tbl.RowStyles.Add((New-Object System.Windows.Forms.RowStyle([System.Windows.Forms.SizeType]::Absolute, 74)))
-[void]$tbl.RowStyles.Add((New-Object System.Windows.Forms.RowStyle([System.Windows.Forms.SizeType]::Absolute, 0)))
+[void]$tbl.RowStyles.Add((New-Object System.Windows.Forms.RowStyle([System.Windows.Forms.SizeType]::Absolute, 100)))  # header
+[void]$tbl.RowStyles.Add((New-Object System.Windows.Forms.RowStyle([System.Windows.Forms.SizeType]::Absolute, 50)))   # search
+[void]$tbl.RowStyles.Add((New-Object System.Windows.Forms.RowStyle([System.Windows.Forms.SizeType]::Absolute, 48)))   # chips
+[void]$tbl.RowStyles.Add((New-Object System.Windows.Forms.RowStyle([System.Windows.Forms.SizeType]::Percent, 100)))   # list
+[void]$tbl.RowStyles.Add((New-Object System.Windows.Forms.RowStyle([System.Windows.Forms.SizeType]::Absolute, 64)))   # status
+[void]$tbl.RowStyles.Add((New-Object System.Windows.Forms.RowStyle([System.Windows.Forms.SizeType]::Absolute, 74)))   # buttons
+[void]$tbl.RowStyles.Add((New-Object System.Windows.Forms.RowStyle([System.Windows.Forms.SizeType]::Absolute, 0)))    # log
 $script:tbl = $tbl
 
-# --- ส่วนหัว ---
-$header = New-Object System.Windows.Forms.Panel
-$header.Dock = 'Fill'; $header.BackColor = $script:Paper; $header.Margin = New-Object System.Windows.Forms.Padding(0)
+# --- ส่วนหัว (Gradient) ---
+Ensure-UiControls
+$header = New-Object AutoInstaller.GradientPanel
+$header.Color1 = $script:Accent; $header.Color2 = $script:Accent2
+$header.Dock = 'Fill'; $header.Margin = New-Object System.Windows.Forms.Padding(0)
 $hTitle = New-Object System.Windows.Forms.Label
-$hTitle.Text = 'ติดตั้งโปรแกรม'; $hTitle.Font = New-Font 20 $true; $hTitle.ForeColor = $script:Ink
-$hTitle.AutoSize = $true; $hTitle.Location = New-Object System.Drawing.Point(84, 14); $hTitle.BackColor = [System.Drawing.Color]::Transparent
+$hTitle.Text = 'Auto Installer'; $hTitle.Font = New-Font 22 $true; $hTitle.ForeColor = [System.Drawing.Color]::White
+$hTitle.AutoSize = $true; $hTitle.Location = New-Object System.Drawing.Point(24, 12); $hTitle.BackColor = [System.Drawing.Color]::Transparent
+$hVer = New-Object System.Windows.Forms.Label
+$hVer.Text = "v$($script:Version)"; $hVer.Font = New-Font 10; $hVer.ForeColor = [System.Drawing.Color]::FromArgb(200, 220, 255)
+$hVer.AutoSize = $true; $hVer.Location = New-Object System.Drawing.Point(210, 22); $hVer.BackColor = [System.Drawing.Color]::Transparent
 $hSub = New-Object System.Windows.Forms.Label
-$hSub.Text = 'เลือกชุด "ทำงาน" หรือ "เกม" หรือติ๊กเองด้านล่าง แล้วกดติดตั้ง'; $hSub.Font = New-Font 10; $hSub.ForeColor = $script:Gray
-$hSub.AutoSize = $true; $hSub.Location = New-Object System.Drawing.Point(87, 58); $hSub.BackColor = [System.Drawing.Color]::Transparent
-$hIcon = New-Object System.Windows.Forms.Label
-$hIcon.Text = [string][char]0x2193; $hIcon.Font = New-Object System.Drawing.Font('Segoe UI', 22, [System.Drawing.FontStyle]::Bold)
-$hIcon.ForeColor = [System.Drawing.Color]::White; $hIcon.BackColor = $script:Accent; $hIcon.TextAlign = 'MiddleCenter'
-$hIcon.Size = New-Object System.Drawing.Size(48, 48); $hIcon.Location = New-Object System.Drawing.Point(28, 18); Set-Round $hIcon
-$header.Controls.AddRange(@($hIcon, $hTitle, $hSub))
+$hSub.Text = $script:SysInfo; $hSub.Font = New-Font 9.5; $hSub.ForeColor = [System.Drawing.Color]::FromArgb(200, 220, 255)
+$hSub.AutoSize = $false; $hSub.AutoEllipsis = $true; $hSub.Size = New-Object System.Drawing.Size(760, 22)
+$hSub.Location = New-Object System.Drawing.Point(26, 52); $hSub.BackColor = [System.Drawing.Color]::Transparent
+$hPC = New-Object System.Windows.Forms.Label
+$hPC.Text = $env:COMPUTERNAME; $hPC.Font = New-Font 9; $hPC.ForeColor = [System.Drawing.Color]::FromArgb(200, 220, 255)
+$hPC.AutoSize = $true; $hPC.Location = New-Object System.Drawing.Point(26, 76); $hPC.BackColor = [System.Drawing.Color]::Transparent
+$header.Controls.AddRange(@($hTitle, $hVer, $hSub, $hPC))
 $tbl.Controls.Add($header, 0, 0)
+
+# --- ช่องค้นหา ---
+$searchPanel = New-Object System.Windows.Forms.Panel
+$searchPanel.Dock = 'Fill'; $searchPanel.BackColor = $script:Paper; $searchPanel.Margin = New-Object System.Windows.Forms.Padding(0)
+$script:searchBox = New-Object AutoInstaller.SearchBox
+$script:searchBox.Placeholder = 'ค้นหาโปรแกรม...'
+$script:searchBox.Font = New-Font 11; $script:searchBox.BorderStyle = 'FixedSingle'
+$script:searchBox.Location = New-Object System.Drawing.Point(24, 10); $script:searchBox.Size = New-Object System.Drawing.Size(300, 30)
+$script:searchBox.BackColor = [System.Drawing.Color]::White; $script:searchBox.ForeColor = $script:Ink
+$searchPanel.Controls.Add($script:searchBox)
+$tbl.Controls.Add($searchPanel, 0, 1)
 
 # --- ปุ่มชุดโปรแกรม (ทำงาน / เกม / ทั้งหมด / ล้าง) + จำนวนที่เลือก ---
 $toolbar = New-Object System.Windows.Forms.TableLayoutPanel
@@ -1864,34 +1952,35 @@ $toolbar.BackColor = $script:Paper
 [void]$toolbar.ColumnStyles.Add((New-Object System.Windows.Forms.ColumnStyle([System.Windows.Forms.SizeType]::AutoSize)))
 [void]$toolbar.ColumnStyles.Add((New-Object System.Windows.Forms.ColumnStyle([System.Windows.Forms.SizeType]::Percent, 100)))
 $links1 = New-Object System.Windows.Forms.FlowLayoutPanel
-$links1.Dock = 'Fill'; $links1.Padding = New-Object System.Windows.Forms.Padding(28, 10, 0, 0); $links1.AutoSize = $true; $links1.WrapContents = $false; $links1.FlowDirection = 'LeftToRight'; $links1.BackColor = $script:Paper
+$links1.Dock = 'Fill'; $links1.Padding = New-Object System.Windows.Forms.Padding(24, 6, 0, 0); $links1.AutoSize = $true; $links1.WrapContents = $false; $links1.FlowDirection = 'LeftToRight'; $links1.BackColor = $script:Paper
 $script:chipWork = New-Chip 'ทำงาน'
 $script:chipGame = New-Chip 'เกม'
 $script:lnkAll   = New-Chip 'ทั้งหมด'
 $script:lnkNone  = New-Chip 'ล้าง'
-$script:lnkNone.Size = New-Object System.Drawing.Size(72, 36)
+$script:lnkNone.Size = New-Object System.Drawing.Size(72, 34)
 $links1.Controls.AddRange(@($script:chipWork, $script:chipGame, $script:lnkAll, $script:lnkNone))
 $script:lblCount = New-Object System.Windows.Forms.Label
 $script:lblCount.AutoSize = $true; $script:lblCount.ForeColor = $script:Gray; $script:lblCount.Font = New-Font 10
-$script:lblCount.Anchor = 'Right'; $script:lblCount.Margin = New-Object System.Windows.Forms.Padding(0, 0, 28, 0)
+$script:lblCount.Anchor = 'Right'; $script:lblCount.Margin = New-Object System.Windows.Forms.Padding(0, 0, 24, 0)
 $toolbar.Controls.Add($links1, 0, 0)
 $toolbar.Controls.Add($script:lblCount, 1, 0)
-$tbl.Controls.Add($toolbar, 0, 1)
+$tbl.Controls.Add($toolbar, 0, 2)
 
 # --- รายการโปรแกรม ---
-Ensure-UiControls
 $lv = New-Object AutoInstaller.CardList
 $script:lv = $lv
 $lv.View = 'Details'; $lv.CheckBoxes = $true; $lv.FullRowSelect = $true; $lv.HideSelection = $true
-$lv.ShowGroups = $false; $lv.HeaderStyle = 'None'; $lv.BorderStyle = 'None'; $lv.MultiSelect = $false
+$lv.HeaderStyle = 'None'; $lv.BorderStyle = 'None'; $lv.MultiSelect = $false
 $lv.Font = New-Font 12
 $lv.Dock = 'Fill'; $lv.Margin = New-Object System.Windows.Forms.Padding(24, 4, 24, 4); $lv.BackColor = [System.Drawing.Color]::White; $lv.ForeColor = $script:Ink
 [void]$lv.Columns.Add('', 400)
+[void]$lv.Columns.Add('tag1', 0)   # category
+[void]$lv.Columns.Add('tag2', 0)   # type (W/D/P/S/A)
 $rowImg = New-Object System.Windows.Forms.ImageList
-$rowImg.ImageSize = New-Object System.Drawing.Size(1, 46)      # ทำให้แถวสูงขึ้น อ่านง่ายขึ้น
+$rowImg.ImageSize = New-Object System.Drawing.Size(1, 48)
 $lv.SmallImageList = $rowImg
 $lv.Add_Resize({ $script:lv.Columns[0].Width = [Math]::Max(200, $script:lv.ClientSize.Width - 6) })
-$tbl.Controls.Add($lv, 0, 2)
+$tbl.Controls.Add($lv, 0, 3)
 
 # --- แถบความคืบหน้า ---
 $statusPanel = New-Object System.Windows.Forms.TableLayoutPanel
@@ -1906,7 +1995,7 @@ $script:status.ForeColor = $script:Gray; $script:status.Margin = New-Object Syst
 $script:status.AutoEllipsis = $true
 $statusPanel.Controls.Add($script:bar, 0, 0)
 $statusPanel.Controls.Add($script:status, 0, 1)
-$tbl.Controls.Add($statusPanel, 0, 3)
+$tbl.Controls.Add($statusPanel, 0, 4)
 
 # --- ปุ่ม ---
 $btnRow = New-Object System.Windows.Forms.TableLayoutPanel
@@ -1916,7 +2005,7 @@ $btnRow.BackColor = $script:Paper; $btnRow.Dock = 'Fill'; $btnRow.ColumnCount = 
 [void]$btnRow.ColumnStyles.Add((New-Object System.Windows.Forms.ColumnStyle([System.Windows.Forms.SizeType]::Absolute, 100)))
 [void]$btnRow.ColumnStyles.Add((New-Object System.Windows.Forms.ColumnStyle([System.Windows.Forms.SizeType]::Absolute, 210)))
 $links2 = New-Object System.Windows.Forms.FlowLayoutPanel
-$links2.BackColor = $script:Paper; $links2.Dock = 'Fill'; $links2.Padding = New-Object System.Windows.Forms.Padding(20, 24, 0, 0); $links2.AutoSize = $true
+$links2.BackColor = $script:Paper; $links2.Dock = 'Fill'; $links2.Padding = New-Object System.Windows.Forms.Padding(20, 20, 0, 0); $links2.AutoSize = $true
 $script:lnkDetail = New-Link 'ดูรายละเอียด'
 $script:lnkAdmin  = New-Link 'ผู้ดูแลระบบ'
 $script:lnkDetail.Font = New-Font 10; $script:lnkAdmin.Font = New-Font 10
@@ -1943,7 +2032,7 @@ $btnRow.Controls.Add($links2, 0, 0)
 $btnRow.Controls.Add($script:btnUndo, 1, 0)
 $btnRow.Controls.Add($script:btnStop, 2, 0)
 $btnRow.Controls.Add($script:btnInstall, 3, 0)
-$tbl.Controls.Add($btnRow, 0, 4)
+$tbl.Controls.Add($btnRow, 0, 5)
 
 # --- รายละเอียด (log) ซ่อนไว้ก่อน ---
 $script:LogBox = New-Object System.Windows.Forms.TextBox
@@ -1951,7 +2040,7 @@ $script:LogBox.Multiline = $true; $script:LogBox.ReadOnly = $true; $script:LogBo
 $script:LogBox.Font = New-Object System.Drawing.Font('Consolas', 9.5)
 $script:LogBox.BackColor = [System.Drawing.Color]::White
 $script:LogBox.Dock = 'Fill'; $script:LogBox.Margin = New-Object System.Windows.Forms.Padding(16, 0, 16, 12)
-$tbl.Controls.Add($script:LogBox, 0, 5)
+$tbl.Controls.Add($script:LogBox, 0, 6)
 
 $form.Controls.Add($tbl)
 
@@ -2009,6 +2098,19 @@ function Mark-Installed {
     Update-Count
 }
 
+function Get-TypeCode($app) {
+    $t = if ($app.type) { [string]$app.type } else { 'winget' }
+    switch -Wildcard ($t) {
+        'winget'    { return 'W' }
+        'download*' { return 'D' }
+        'portable*' { return 'P' }
+        'config*'   { return 'S' }
+        'appx*'     { return 'A' }
+        'embedded*' { return 'E' }
+        default     { return 'W' }
+    }
+}
+
 function Refresh-List {
     $script:lv.BeginUpdate()
     $script:lv.Items.Clear()
@@ -2026,6 +2128,9 @@ function Refresh-List {
         $item.Name = $cat
         $item.Tag = $a
         $item.Checked = [bool]$a.checked
+        # SubItems for CardList owner-draw
+        [void]$item.SubItems.Add($cat)                   # tag1 = category
+        [void]$item.SubItems.Add((Get-TypeCode $a))      # tag2 = type icon
         [void]$script:lv.Items.Add($item)
     }
     $script:lv.EndUpdate()
@@ -2035,12 +2140,12 @@ function Refresh-List {
 
 function Set-Busy([bool]$busy) {
     $script:Busy = $busy
-    foreach ($c in @($script:lv, $script:btnInstall, $script:btnUndo, $script:lnkAll, $script:lnkNone, $script:chipWork, $script:chipGame, $script:lnkAdmin)) { $c.Enabled = -not $busy }
+    foreach ($c in @($script:lv, $script:btnInstall, $script:btnUndo, $script:lnkAll, $script:lnkNone, $script:chipWork, $script:chipGame, $script:lnkAdmin, $script:searchBox)) { $c.Enabled = -not $busy }
     $script:btnStop.Enabled = $busy
 }
 
 function Show-Detail([bool]$visible) {
-    $script:tbl.RowStyles[5].Height = $(if ($visible) { 190 } else { 0 })
+    $script:tbl.RowStyles[6].Height = $(if ($visible) { 190 } else { 0 })
     $script:lnkDetail.Text = $(if ($visible) { 'ซ่อนรายละเอียด' } else { 'ดูรายละเอียด' })
 }
 
@@ -2051,7 +2156,33 @@ $script:chipWork.Add_Click({ Apply-Preset 'work' })
 $script:chipGame.Add_Click({ Apply-Preset 'game' })
 $script:btnUndo.Add_Click({ Uninstall-All })
 $script:btnStop.Add_Click({ $script:Cancel = $true; $script:status.Text = 'กำลังหยุด...' })
-$script:lnkDetail.Add_LinkClicked({ Show-Detail ($script:tbl.RowStyles[5].Height -eq 0) })
+$script:lnkDetail.Add_LinkClicked({ Show-Detail ($script:tbl.RowStyles[6].Height -eq 0) })
+
+# --- ค้นหาโปรแกรม ---
+$script:searchBox.Add_TextChanged({
+    # sync checked state กลับไป Tag ก่อน rebuild
+    foreach ($i in $script:lv.Items) { if ($i.Tag) { $i.Tag.checked = $i.Checked } }
+    $q = $script:searchBox.Text.Trim().ToLower()
+    $script:lv.BeginUpdate()
+    $script:lv.Items.Clear()
+    $script:lv.Groups.Clear()
+    $groups = @{}
+    foreach ($a in $script:Apps) {
+        if (-not [string]::IsNullOrEmpty($q) -and -not ([string]$a.name).ToLower().Contains($q)) { continue }
+        $cat = if ($a.category) { [string]$a.category } else { 'อื่น ๆ' }
+        if (-not $groups.ContainsKey($cat)) {
+            $g = New-Object System.Windows.Forms.ListViewGroup($cat, $cat)
+            [void]$script:lv.Groups.Add($g)
+            $groups[$cat] = $g
+        }
+        $item = New-Object System.Windows.Forms.ListViewItem([string]$a.name)
+        $item.Group = $groups[$cat]; $item.Name = $cat; $item.Tag = $a; $item.Checked = [bool]$a.checked
+        [void]$item.SubItems.Add($cat); [void]$item.SubItems.Add((Get-TypeCode $a))
+        [void]$script:lv.Items.Add($item)
+    }
+    $script:lv.EndUpdate()
+    Update-Count
+})
 
 $script:lnkAdmin.Add_LinkClicked({
     if (-not (Confirm-Admin)) { return }
