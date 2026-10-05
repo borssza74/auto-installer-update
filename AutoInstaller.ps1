@@ -5,7 +5,7 @@
 param([string]$BaseDir, [string]$EmbeddedFonts, [string]$EmbeddedInstallers, [string]$AppsPath, [switch]$Auto, [switch]$Go, [switch]$Prefetch, [switch]$Updated)
 
 # --- เวอร์ชันและอัพเดทออนไลน์ ---
-$script:Version   = '28.2'
+$script:Version   = '28.4'
 $script:UpdateUrl  = 'https://raw.githubusercontent.com/borssza74/auto-installer-update/main'
 
 $ErrorActionPreference = 'Stop'
@@ -21,11 +21,14 @@ if (-not $ScriptDir) { $ScriptDir = (Get-Location).Path }
 $DataDir = Join-Path $env:ProgramData 'AutoInstaller'
 try { if (-not (Test-Path -LiteralPath $DataDir)) { [void](New-Item -ItemType Directory -Path $DataDir -Force) } } catch { $DataDir = $env:TEMP }
 $AppsSaveFile = Join-Path $DataDir 'apps.json'
-# รายการโปรแกรม: (โหมด /auto เท่านั้น) apps.json ข้าง exe -> apps.json ที่แก้ไว้ใน DataDir -> รายการที่ฝังใน exe
+# รายการโปรแกรม: DataDir -> $AppsPath (จาก exe) -> apps.json ข้างสคริปต์
 $AppsFile = $AppsSaveFile
 $besideApps = Join-Path $ScriptDir 'apps.json'
 if ($Auto -and (Test-Path -LiteralPath $besideApps)) { $AppsFile = $besideApps }
-elseif (-not (Test-Path -LiteralPath $AppsSaveFile) -and $AppsPath) { $AppsFile = $AppsPath }
+elseif (-not (Test-Path -LiteralPath $AppsSaveFile)) {
+    if ($AppsPath -and (Test-Path -LiteralPath $AppsPath)) { $AppsFile = $AppsPath }
+    elseif (Test-Path -LiteralPath $besideApps) { $AppsFile = $besideApps }
+}
 $SettingsFile = Join-Path $DataDir 'settings.json'
 $InstallLog   = Join-Path $DataDir 'AutoInstaller-install.log'
 
@@ -59,8 +62,9 @@ function Invoke-OnlineUpdate {
         $base = $script:UpdateUrl.TrimEnd('/')
         $oldProg = $ProgressPreference; $ProgressPreference = 'SilentlyContinue'
         try {
-            # 1) เช็คเวอร์ชัน (ไฟล์เล็ก timeout 5 วินาที)
-            $vj = Invoke-RestMethod -Uri "$base/version.json" -UseBasicParsing -TimeoutSec 5
+            # 1) เช็คเวอร์ชัน (ไฟล์เล็ก timeout 5 วินาที) — ใส่ cache-bust เพื่อกัน CDN/Windows cache
+            $ts = [DateTimeOffset]::UtcNow.ToUnixTimeSeconds()
+            $vj = Invoke-RestMethod -Uri "$base/version.json?t=$ts" -UseBasicParsing -TimeoutSec 5 -Headers @{'Cache-Control'='no-cache'}
             $remote = [version]$vj.version
             $local  = [version]$script:Version
             if ($remote -le $local) { return }
@@ -104,7 +108,8 @@ function Invoke-OnlineUpdate {
             $ProgressPreference = $oldProg
         }
     } catch {
-        # ออฟไลน์หรือ URL ไม่ถูกต้อง — ข้ามอัพเดท ใช้เวอร์ชันปัจจุบัน
+        # ออฟไลน์หรือ URL ไม่ถูกต้อง — ข้ามอัพเดท ใช้เวอร์ชันปัจจุบัน — log error
+        try { $_ | Out-File -FilePath (Join-Path $env:TEMP 'ai-update-error.txt') -Force } catch {}
     }
 }
 Invoke-OnlineUpdate
